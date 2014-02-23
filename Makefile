@@ -5,7 +5,7 @@
 # ======================
 
 MODE=DEBUG
-CC=gcc
+CC=g++
 INCPATH= -I /include
 LIBPATH= -L /lib
 CFLAGS= -o $@ $(INCPATH) -c
