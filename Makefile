@@ -6,42 +6,35 @@
 
 MODE=DEBUG
 CC=g++
-INCPATH= -I /include
-LIBPATH= -L /lib
-CFLAGS= -o $@ $(INCPATH) -c
-LDFLAGS= -o $@ $(LIBPATH)
+CFLAGS= -I ./include/
+LDFLAGS= -L ./lib/
 PATHEXEC=bin/
 EXEC=Parking
-LIBS= #-ltp -lncurses -ltcl 
 TARGET=$(addprefix $(PATHEXEC), $(EXEC))
 
 ifeq ($(MODE),DEBUG)
 	CFLAGS:=$(CFLAGS) -g
 endif
 
-SRC=hello.cpp Mere.cpp
+SRC=hello.cpp #Mere.cpp
 OBJ=$(SRC:.cpp=.o)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	@mkdir -p $(PATHEXEC)
-#	$(CC) -o $@ $^ $(LDFLAGS)
-	$(CC) $(LDFLAGS) $^ $(LIBS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
-%.o: %.cpp Config.h
-#	$(CC) -o $@ -c $< $(CFLAGS)
-	$(CC) $(CFLAGS) $(<)
+%.o: %.cpp
+	$(CC) -o $@ -c $< $(CFLAGS)
 
 run: $(TARGET)
-	./$(TARGET)
+	@./$(TARGET)
 
-test: $(TARGET)
-	@make -C tests
+#test: $(TARGET)
 
 clean:
 	@rm -rf *.o
-	@make clean -C tests
 
 mrproper: clean
 	@rm -rf $(TARGET)
