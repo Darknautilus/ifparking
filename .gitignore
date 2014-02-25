@@ -19,3 +19,4 @@
 
 # Project stuff
 bin
+!libtp.a
