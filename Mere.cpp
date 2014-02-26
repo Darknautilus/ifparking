@@ -19,7 +19,9 @@
 #include <sys/wait.h>
 //------------------------------------------------------ Include personnel
 #include "Mere.h"
-
+#include "Heure.h"
+#include "Outils.h"
+#include "Menu.h"
 ///////////////////////////////////////////////////////////////////  PRIVE
 //------------------------------------------------------------- Constantes
 #define DROITS 0666 //lecture, écriture pour tout le monde
@@ -48,9 +50,9 @@ int main ( )
 	sigset_t masque;
 	sigset_t anciens;
 
-	sigemptyset(&masque); // création d'un masque vide (liste de signaux masqué)
-	sigaddset(&masque,SIGINT); // ajout du signal SIGINT à mon masque
-	sigprocmask(SIG_SETMASK,&masque,&anciens); // mise en place du masque grâce à cette fonction !
+	//sigemptyset(&masque); // création d'un masque vide (liste de signaux masqué)
+	//sigaddset(&masque,SIGINT); // ajout du signal SIGINT à mon masque
+	//sigprocmask(SIG_SETMASK,&masque,&anciens); // mise en place du masque grâce à cette fonction !
 
 	
 	key_t clefParking; // voir si c'est necessaire plutot qu'une simple clef privée..
@@ -70,11 +72,8 @@ int main ( )
 
 
 	//phase Initialisation
-	
-	/*
-	InitialiserApplication(XTERM);
+	//InitialiserApplication(XTERM);
 	noHeure = ActiverHeure();
-	*/
 
 	//initalisation des mémoires partagées
 	int flag_options = 0;
