@@ -23,11 +23,9 @@
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-// type Nom ( liste de paramètres );
+void BarriereSortie(int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking);
 // Mode d'emploi :
-//
-// Contrat :
-//
+//	- Processus fils BarriereSortie
 
 #endif // BARRIERESORTIE_H
 

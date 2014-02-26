@@ -7,11 +7,11 @@
 MODE=NORMAL
 CC=g++
 CFLAGS= -I /shares/public/tp/tp-multitache/
-LDFLAGS= /shares/public/tp/tp-multitache/libtp.a
+LDFLAGS= /shares/public/tp/tp-multitache/libtp.a #librairie statiques
 PATHEXEC=bin/
 EXEC=Parking
 TARGET=$(addprefix $(PATHEXEC), $(EXEC))
-LIBS = -ltcl -lncurses
+LIBS = -ltcl -lncurses #-ltp		#librairies systèmes
 
 ifeq ($(MODE),DEBUG)
 	CFLAGS:=$(CFLAGS) -g
