@@ -7,11 +7,11 @@
 MODE=NORMAL
 CC=g++
 CFLAGS= -I ./include
-LDFLAGS= lib/libtp.a #librairie statiques
+LDFLAGS= -ltcl -lncurses lib/libtp.a
+#LDFLAGS= /shares/public/tp/tp-multitache/libtp.a
 PATHEXEC=bin/
 EXEC=Parking
 TARGET=$(addprefix $(PATHEXEC), $(EXEC))
-LIBS = #-ltcl -lncurses #-ltp		#librairies systèmes
 
 ifeq ($(MODE),DEBUG)
 	CFLAGS:=$(CFLAGS) -g
@@ -24,7 +24,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	@mkdir -p $(PATHEXEC)
-	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cpp
 	$(CC) -o $@ -c $< $(CFLAGS)
