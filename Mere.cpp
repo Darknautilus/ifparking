@@ -101,7 +101,8 @@ int main ( )
 	if((noGererClavier =fork()) == 0)
 	{
 		//appel gererClavier()
-		sleep(30);
+		sleep(10);
+		printf("Temporisation expiree pour gererClavier (%d)",getpid());
 	}
 	else if((noBarriereSortie = fork()) == 0)
 	{

@@ -50,7 +50,7 @@ static void FinT (int noSignal)
 static void FinVoiturier(int noSignal)
 {
 	int numPlace;
-	if(noSignal = SIGCHLD )
+	if(noSignal == SIGCHLD )
 	{
 		wait(&numPlace); // pour récupérer le retour du processus Voiturier
 		string etat= "ETAT_P"+numPlace; 
