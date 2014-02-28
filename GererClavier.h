@@ -17,6 +17,7 @@
 
 /////////////////////////////////////////////////////////////////  INCLUDE
 //--------------------------------------------------- Interfaces utilisées
+#include <Menu.h>
 
 //------------------------------------------------------------- Constantes
 
@@ -27,6 +28,8 @@
 void GererClavier();
 // Mode d'emploi :
 // Contrat :
+
+void Commande(char code, unsigned int valeur);
 
 #endif // GererClavier_H
 

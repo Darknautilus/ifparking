@@ -34,31 +34,30 @@
 //---------------------------------------------------- Variables statiques
 
 //------------------------------------------------------ Fonctions privées
-void PhaseInit()
+static void PhaseInit()
 {
 
 
 }
+
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
 int main ( )
 // Algorithme :
 //	- Processus principal lancé au début de l'application.
 {
+	// on masque le signal SIGINT
+	struct sigaction masqueFin;
+	masqueFin.sa_handler = SIG_IGN;
+	sigemptyset(&masqueFin.sa_mask);
+	masqueFin.sa_flags = 0;
+	sigaction(SIGINT,&masqueFin,NULL);	
+
 	//liste tâche filles
 	pid_t noGererClavier;
 	pid_t noBarriereSortie;
 	pid_t noBarriereEntree;
 	pid_t noHeure;
-
-	//masque de blocage de signaux
-	sigset_t masque;
-	sigset_t anciens;
-
-	sigemptyset(&masque); // création d'un masque vide (liste de signaux masqué)
-	sigaddset(&masque,SIGINT); // ajout du signal SIGINT à mon masque
-	sigprocmask(SIG_SETMASK,&masque,&anciens); // mise en place du masque grâce à cette fonction !
-
 	
 	key_t clefParking; // voir si c'est necessaire plutot qu'une simple clef privée..
 	
@@ -95,14 +94,12 @@ int main ( )
 	//initalisation des sémaphores
 	semctl(sem_placeLibre,0,SETVAL,NB_PLACES);
 	semctl(sem_ecran,0,SETVAL,1);
-	 
 	
 	//creation des processus fils..
 	if((noGererClavier =fork()) == 0)
 	{
-		//appel gererClavier()
-		sleep(10);
-		printf("Temporisation expiree pour gererClavier (%d)",getpid());
+		GererClavier();
+		exit(0);
 	}
 	else if((noBarriereSortie = fork()) == 0)
 	{
