@@ -7,8 +7,18 @@
 MODE=NORMAL
 CC=g++
 CFLAGS= -I ./include
-LDFLAGS= -ltcl -lncurses lib/libtp.a
-#LDFLAGS= /shares/public/tp/tp-multitache/libtp.a
+LDFLAGS=
+
+# liaison de libtp suivant si l'on est à l'INSA ou non
+LIBTPPATH=/shares/public/tp/tp-multitache/libtp.a
+ifeq ($(wildcard $(LIBTPPATH)),)
+	LDFLAGS+= ./lib/libtp.a
+else
+	LDFLAGS+= $(LIBTPPATH)
+endif
+
+LDFLAGS+= -ltcl -lncurses
+
 PATHEXEC=bin/
 EXEC=Parking
 TARGET=$(addprefix $(PATHEXEC), $(EXEC))
