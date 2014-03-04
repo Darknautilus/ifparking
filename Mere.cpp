@@ -56,7 +56,9 @@ int main ( )
 	//liste tâche filles
 	pid_t noGererClavier;
 	pid_t noBarriereSortie;
-	pid_t noBarriereEntree;
+	pid_t noBarriereEntree1;
+	pid_t noBarriereEntree2;
+	pid_t noBarriereEntree3;
 	pid_t noHeure;
 	
 	key_t clefParking; // voir si c'est necessaire plutot qu'une simple clef privée..
@@ -69,11 +71,13 @@ int main ( )
 	int sem_placeLibre = semget (IPC_PRIVATE,1, IPC_CREAT | DROITS); //sémaphore pour gérer une nouvelle place disponible laissé après une sortie de voiture
 	int sem_ecran = semget(IPC_PRIVATE,1,IPC_CREAT|DROITS); //sémaphore pour gérer les accès concurent sur la ressource critique écran.
 
-	//creation canal de communication (anonyme)
-	int canal[4]; //2 entrées en lecture et 2 entrées en écriture, pour simuler 2 canaux distincts
-	pipe(canal);
-
-
+	//creation canal de communication des barrieres
+	int barriere1[2];
+	int barriere2[2];
+	int barriere3[2];
+	pipe(barriere1);
+	pipe(barriere2);
+	pipe(barriere3);
 
 	//phase Initialisation
 	InitialiserApplication(TYPE_TERMINAL);
@@ -98,7 +102,7 @@ int main ( )
 	//creation des processus fils..
 	if((noGererClavier =fork()) == 0)
 	{
-		GererClavier();
+		GererClavier(barriere1,barriere2,barriere3);
 		exit(0);
 	}
 	else if((noBarriereSortie = fork()) == 0)
@@ -106,16 +110,28 @@ int main ( )
 		//appel BariereSortie(mp_nbPlace,mp_placesParking,sem_placeLibre,sem_ecran)
 		for(;;);
 	}
-	else if((noBarriereEntree = fork()) == 0)
+	else if((noBarriereEntree1 = fork()) == 0)
 	{
-		// appel BarriereEntree( ... )
-		for(;;);
+		BarriereEntree(barriere1, sem_ecran,sem_placeLibre,mp_nbPlace,mp_placesParking);
+		exit(0);
+	}
+	else if((noBarriereEntree2 = fork()) == 0)
+	{
+		BarriereEntree(barriere2, sem_ecran,sem_placeLibre,mp_nbPlace,mp_placesParking);
+		exit(0);
+	}
+	else if((noBarriereEntree3 = fork()) == 0)
+	{
+		BarriereEntree(barriere3, sem_ecran,sem_placeLibre,mp_nbPlace,mp_placesParking);
+		exit(0);
 	}
 	else
 	{
-		for(int i =0;i<4;i++)
+		for(int i =0;i<2;i++)
 		{
-			close (canal[i]);
+			close (barriere1[i]);
+			close (barriere2[i]);
+			close (barriere3[i]);
 		}
 		//fin phase initialisation
 	
@@ -124,11 +140,15 @@ int main ( )
 		printf("%d est mort alors je pète tout !",noGererClavier);	
 		
 		//phase de destruction
-		kill(noBarriereEntree,SIGKILL);
-		waitpid(noBarriereEntree,NULL,0);
+		kill(noBarriereEntree1,SIGUSR2);
+		waitpid(noBarriereEntree1,NULL,0);
+		kill(noBarriereEntree2,SIGUSR2);
+		waitpid(noBarriereEntree2,NULL,0);
+		kill(noBarriereEntree3,SIGUSR2);
+		waitpid(noBarriereEntree3,NULL,0);
 		kill(noBarriereSortie,SIGKILL);
 		waitpid(noBarriereSortie,NULL,0);
-		kill(noHeure,SIGKILL);
+		kill(noHeure,SIGUSR2);
 		waitpid(noHeure,0,0);
 		
 		bool efface = true;

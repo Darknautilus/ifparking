@@ -17,15 +17,21 @@
 
 /////////////////////////////////////////////////////////////////  INCLUDE
 //--------------------------------------------------- Interfaces utilisées
+#include <Outils.h>
 #include <Menu.h>
 
 //------------------------------------------------------------- Constantes
 
 //------------------------------------------------------------------ Types
+typedef struct
+{
+	TypeUsager type;
+	TypeBarriere barriere;
+} Voiture;
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void GererClavier();
+void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[]);
 // Mode d'emploi :
 // Contrat :
 

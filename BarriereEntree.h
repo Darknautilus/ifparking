@@ -17,6 +17,7 @@
 
 /////////////////////////////////////////////////////////////////  INCLUDE
 //--------------------------------------------------- Interfaces utilisées
+#include "GererClavier.h"
 
 //------------------------------------------------------------- Constantes
 
@@ -24,7 +25,7 @@
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void BarriereEntree(int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking);
+void BarriereEntree(int canal[], int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking);
 //Mode d'emploi :
 
 //Contrat :

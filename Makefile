@@ -27,7 +27,7 @@ ifeq ($(MODE),DEBUG)
 	CFLAGS:=$(CFLAGS) -g
 endif
 
-SRC=Mere.cpp GererClavier.cpp
+SRC=Mere.cpp GererClavier.cpp BarriereEntree.cpp
 OBJ=$(SRC:.cpp=.o)
 
 all: $(TARGET)

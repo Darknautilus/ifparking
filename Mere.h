@@ -19,6 +19,8 @@
 /////////////////////////////////////////////////////////////////  INCLUDE
 //--------------------------------------------------- Interfaces utilisées
 #include "GererClavier.h"
+#include "BarriereEntree.h"
+#include "BarriereSortie.h"
 
 //------------------------------------------------------------- Constantes
 
