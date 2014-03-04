@@ -27,6 +27,7 @@ typedef struct
 {
 	TypeUsager type;
 	TypeBarriere barriere;
+	int num;
 } Voiture;
 
 //////////////////////////////////////////////////////////////////  PUBLIC

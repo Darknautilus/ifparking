@@ -9,12 +9,13 @@
 
 /////////////////////////////////////////////////////////////////  INCLUDE
 //-------------------------------------------------------- Include système
-#include <stdio.h>
-#include <string.h>
+#include <map>
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <Outils.h>
+#include <sys/wait.h>
+#include <time.h>
 
 //------------------------------------------------------ Include personnel
 #include "BarriereEntree.h"
@@ -25,11 +26,43 @@
 //------------------------------------------------------------------ Types
 
 //---------------------------------------------------- Variables statiques
+static bool exited = false;
+static std::map<pid_t,Voiture> voituriers;
+static Voiture voitCourante;
+static int lastNumVoiture = 0;
 
 //------------------------------------------------------ Fonctions privées
+static void FinVoiturier(int signal)
+{
+	if(!exited)
+	{
+		int status;
+		pid_t voiturier = wait(&status);
+		if(WIFEXITED(status))
+		{
+			int numPlace = WEXITSTATUS(status);
+			Voiture voit = voituriers[voiturier];
+			AfficherPlace(numPlace,voit.type,voit.num,time(NULL));
+			voituriers.erase(voiturier);
+			Afficher(MESSAGE,numPlace);
+		}
+	}
+}
+
 static void FinT(int signal)
 {
+	exited = true;
+	for(std::map<pid_t,Voiture>::iterator it = voituriers.begin(); it != voituriers.end(); ++it)
+	{
+		kill(it->first,SIGUSR2);
+	}
+	voituriers.clear();
 	exit(0);
+}
+
+static int getNumVoiture()
+{
+	return lastNumVoiture = (lastNumVoiture % 999) + 1;
 }
 
 //////////////////////////////////////////////////////////////////  PUBLIC
@@ -48,21 +81,24 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 	masqueSigusr2.sa_flags = 0;
 	sigaction(SIGUSR2,&masqueSigusr2,NULL);
 
+	struct sigaction masqueFinVoit;
+	masqueFinVoit.sa_handler = FinVoiturier;
+	sigemptyset(&masqueFinVoit.sa_mask);
+	masqueFinVoit.sa_flags = 0;
+	sigaction(SIGCHLD,&masqueFinVoit,NULL);
+
 	close(canal[1]);
 
 	for(;;)
 	{
 		Voiture voiture;
 		read(canal[0],&voiture,sizeof(Voiture));
-		
-		char message[255];
-		char integer[2];
+		voiture.num = getNumVoiture();
 
-		strcpy(message,"Une voiture est arrivée à la barrière ");
-		sprintf(integer,"%d",voiture.barriere);
-		strcat(message,integer);
-		strcat(message," !");
-		Afficher(MESSAGE,message);
+		DessinerVoitureBarriere(voiture.barriere,voiture.type);
+		// vérifications
+		pid_t voiturier = GarerVoiture(voiture.barriere);
+		voituriers.insert(make_pair(voiturier,voiture));
 	}
 
 } //----- fin de BarriereEntree
