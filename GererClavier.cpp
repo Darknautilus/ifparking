@@ -60,13 +60,13 @@ void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[])
 void Commande(char code, unsigned int valeur)
 {
 	int desc;
+	Voiture voit;
 	switch(code)
 	{
 		case 'Q':
 			FinT(0);
 			break;
 		case 'P':
-			Voiture voit;
 			voit.type = PROF;
 			if(valeur == 1)
 			{
@@ -81,7 +81,18 @@ void Commande(char code, unsigned int valeur)
 			write(desc,&voit,sizeof(Voiture));
 			break;
 		case 'A':
-			printf("Autre porte %d",valeur);
+			voit.type = AUTRE;
+			if(valeur == 1)
+			{
+				desc = barriere2[1];
+				voit.barriere = AUTRE_BLAISE_PASCAL;
+			}
+			else
+			{
+				desc = barriere3[1];
+				voit.barriere = ENTREE_GASTON_BERGER;
+			}
+			write(desc,&voit,sizeof(Voiture));
 			break;
 		case 'S':
 			printf("Sortie place %d",valeur);
