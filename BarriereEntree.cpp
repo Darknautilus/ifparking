@@ -16,6 +16,7 @@
 #include <Outils.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <sys/errno.h>
 
 //------------------------------------------------------ Include personnel
 #include "BarriereEntree.h"
@@ -44,7 +45,6 @@ static void FinVoiturier(int signal)
 			Voiture voit = voituriers[voiturier];
 			AfficherPlace(numPlace,voit.type,voit.num,time(NULL));
 			voituriers.erase(voiturier);
-			Afficher(MESSAGE,numPlace);
 		}
 	}
 }
@@ -89,17 +89,21 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 
 	close(canal[1]);
 
-	for(;;)
+	Voiture voiture;
+	int readRet;
+	do
 	{
-		Voiture voiture;
-		read(canal[0],&voiture,sizeof(Voiture));
-		voiture.num = getNumVoiture();
+		while((readRet = read(canal[0],&voiture,sizeof(Voiture))) > 0)
+		{
+			voiture.num = getNumVoiture();
 
-		DessinerVoitureBarriere(voiture.barriere,voiture.type);
-		// vérifications
-		pid_t voiturier = GarerVoiture(voiture.barriere);
-		voituriers.insert(make_pair(voiturier,voiture));
+			DessinerVoitureBarriere(voiture.barriere,voiture.type);
+			// vérifications
+			pid_t voiturier = GarerVoiture(voiture.barriere);
+			voituriers.insert(make_pair(voiturier,voiture));
+		}
 	}
+	while(readRet == -1 && errno == EINTR);
 
 } //----- fin de BarriereEntree
 
