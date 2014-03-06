@@ -28,6 +28,9 @@ typedef struct
 	TypeUsager type;
 	TypeBarriere barriere;
 	int num;
+	int numPlace; // qu'on utilise que pour la commande de sortie
+	time_t arrivee;
+	time_t depart;
 } Voiture;
 
 //////////////////////////////////////////////////////////////////  PUBLIC

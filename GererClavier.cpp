@@ -96,6 +96,9 @@ void Commande(char code, unsigned int valeur)
 			break;
 		case 'S':
 			printf("Sortie place %d",valeur);
+			
+			voit.numPlace = valeur;
+			
 			break;
 		default:
 			break;

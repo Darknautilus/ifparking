@@ -75,9 +75,11 @@ int main ( )
 	int barriere1[2];
 	int barriere2[2];
 	int barriere3[2];
+	int barriere4[2];
 	pipe(barriere1);
 	pipe(barriere2);
 	pipe(barriere3);
+	pipe(barriere4);
 
 	//phase Initialisation
 	InitialiserApplication(TYPE_TERMINAL);
@@ -103,27 +105,26 @@ int main ( )
 	if((noGererClavier =fork()) == 0)
 	{
 		GererClavier(barriere1,barriere2,barriere3);
-		exit(0);
+		//exit(0);
 	}
 	else if((noBarriereSortie = fork()) == 0)
 	{
-		//appel BariereSortie(mp_nbPlace,mp_placesParking,sem_placeLibre,sem_ecran)
-		for(;;);
+		//BarriereSortie(barriere4,sem_ecran,sem_placeLibre,mp_nbPlace);	
 	}
 	else if((noBarriereEntree1 = fork()) == 0)
 	{
 		BarriereEntree(barriere1, sem_ecran,sem_placeLibre,mp_nbPlace,mp_placesParking);
-		exit(0);
+		//exit(0);
 	}
 	else if((noBarriereEntree2 = fork()) == 0)
 	{
 		BarriereEntree(barriere2, sem_ecran,sem_placeLibre,mp_nbPlace,mp_placesParking);
-		exit(0);
+		//exit(0);
 	}
 	else if((noBarriereEntree3 = fork()) == 0)
 	{
 		BarriereEntree(barriere3, sem_ecran,sem_placeLibre,mp_nbPlace,mp_placesParking);
-		exit(0);
+		//exit(0);
 	}
 	else
 	{
@@ -132,6 +133,7 @@ int main ( )
 			close (barriere1[i]);
 			close (barriere2[i]);
 			close (barriere3[i]);
+			close (barriere4[i]);
 		}
 		//fin phase initialisation
 	
@@ -146,7 +148,7 @@ int main ( )
 		waitpid(noBarriereEntree2,NULL,0);
 		kill(noBarriereEntree3,SIGUSR2);
 		waitpid(noBarriereEntree3,NULL,0);
-		kill(noBarriereSortie,SIGKILL);
+		kill(noBarriereSortie,SIGUSR2);
 		waitpid(noBarriereSortie,NULL,0);
 		kill(noHeure,SIGUSR2);
 		waitpid(noHeure,0,0);

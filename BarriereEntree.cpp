@@ -96,7 +96,7 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 		while((readRet = read(canal[0],&voiture,sizeof(Voiture))) > 0)
 		{
 			voiture.num = getNumVoiture();
-
+			voiture.arrivee = time(0);  // pour enregistrer l'heure d'arrivée
 			DessinerVoitureBarriere(voiture.barriere,voiture.type);
 			// vérifications
 			pid_t voiturier = GarerVoiture(voiture.barriere);
