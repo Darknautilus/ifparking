@@ -17,7 +17,8 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <sys/errno.h>
-
+#include <sys/shm.h>
+#include <sys/wait.h>
 //------------------------------------------------------ Include personnel
 #include "BarriereEntree.h"
 
@@ -31,6 +32,8 @@ static bool exited = false;
 static std::map<pid_t,Voiture> voituriers;
 static Voiture voitCourante;
 static int lastNumVoiture = 0;
+static Voiture *zone_placesParking;
+
 
 //------------------------------------------------------ Fonctions privées
 static void FinVoiturier(int signal)
@@ -43,6 +46,8 @@ static void FinVoiturier(int signal)
 		{
 			int numPlace = WEXITSTATUS(status);
 			Voiture voit = voituriers[voiturier];
+			voit.numPlace = numPlace;
+			zone_placesParking[numPlace] = voit;
 			AfficherPlace(numPlace,voit.type,voit.num,time(NULL));
 			voituriers.erase(voiturier);
 		}
@@ -55,6 +60,8 @@ static void FinT(int signal)
 	for(std::map<pid_t,Voiture>::iterator it = voituriers.begin(); it != voituriers.end(); ++it)
 	{
 		kill(it->first,SIGUSR2);
+		waitpid(it->first,NULL,0);
+		
 	}
 	voituriers.clear();
 	exit(0);
@@ -89,6 +96,8 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 
 	close(canal[1]);
 
+	zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,0);
+	
 	Voiture voiture;
 	int readRet;
 	do

@@ -19,6 +19,8 @@
 #include <sys/wait.h>
 #include <string>
 #include <map>
+#include <iostream>
+
 //------------------------------------------------------ Include personnel
 #include "BarriereSortie.h"
 #include "Outils.h"
@@ -31,7 +33,7 @@
 
 //---------------------------------------------------- Variables statiques
 static int *zone_nbPlace;
-static int *zone_placesParking;
+static Voiture *zone_placesParking;
 
 static struct sembuf reserver = {0,-1,0};
 static struct sembuf liberer = {0,1,0};
@@ -39,7 +41,6 @@ static struct sembuf liberer = {0,1,0};
 static int nbVoiturier=0;
 static int *psem_placeLibre;
 static int *psem_ecran;
-static int (*pcanal)[];
 static std::map<pid_t,Voiture> voituriers;
 
 //------------------------------------------------------ Fonctions privées
@@ -66,38 +67,34 @@ static void FinVoiturier(int noSignal)
 		Voiture voit = voituriers[voiturier];  // pour récupérer les infos concernant la voiture gérée par le voiturier
 		voit.depart = time(0);	// défini l'heure de départ 
 
-		enum TypeZone etat;
+		//enum TypeZone etat;
 		//etat	=	ETAT_P2;
-		semop((*psem_ecran),&reserver,1); // Réservation de la ressource critique écran
+		//semop((*psem_ecran),&reserver,1); // Réservation de la ressource critique écran
 		//Effacer(etat); 
 		AfficherSortie(voit.type,voit.num,voit.arrivee,voit.depart);  
-		semop((*psem_ecran),&liberer,1); // Liberation de la ressource critique écran
+		//semop((*psem_ecran),&liberer,1); // Liberation de la ressource critique écran
 
 		voituriers.erase(voiturier);
 		nbVoiturier--;
 		zone_nbPlace++;
 		
-		semop((*psem_placeLibre),&liberer,1); //Pour indiquer qu'il y a de nouveau une place libre
+		//semop((*psem_placeLibre),&liberer,1); //Pour indiquer qu'il y a de nouveau une place libre
 	}
 }
 
-static void Initialisation(int canal[], int sem_ecran,int sem_placeLibre,/* int mp_placesParking*/ int mp_nbPlace)
-// Mode d'emploi :
-//	- masque les signaux SIGINT,SIGUSR2, SIGCHLD
-//	- arme les signaux SIGUSR2 et SIGCHLD respectivement sur les handler FinT et FinVoiturier
-//	- ferme le canal d'écriture du canal utilisé 
+//////////////////////////////////////////////////////////////////  PUBLIC
+//---------------------------------------------------- Fonctions publiques
+void BarriereSortie (int canal[],int sem_ecran,int sem_placeLibre,int mp_nbPlace, int mp_placesParking)
+// Algorithme :
 //
-// Contrat : aucun
 {
 	//masque de blocage de signaux
-	sigset_t masque;
-	sigset_t anciens;
-
-	sigemptyset(&masque); // création d'un masque vide (liste de signaux masqué)
-	sigaddset(&masque,SIGINT); // ajout du signal SIGINT à mon masque
-	sigaddset(&masque,SIGUSR2);
-	sigaddset(&masque,SIGCHLD);
-	sigprocmask(SIG_SETMASK,&masque,&anciens); // mise en place du masque grâce à cette fonction !
+	
+	struct sigaction masqueFin;
+	masqueFin.sa_handler = SIG_IGN;
+	sigemptyset(&masqueFin.sa_mask);
+	masqueFin.sa_flags = 0;
+	sigaction(SIGINT,&masqueFin,NULL);	
 	
 	struct sigaction actionFinT;
 	actionFinT.sa_handler = FinT;  // associe la procedure FinT
@@ -108,7 +105,7 @@ static void Initialisation(int canal[], int sem_ecran,int sem_placeLibre,/* int 
 	struct sigaction actionFinVoiturier;
 	actionFinVoiturier.sa_handler = FinVoiturier;
 	sigemptyset(&actionFinVoiturier.sa_mask);
-	actionFinVoiturier.sa_flags=0; //TODO penser à mettre ou pas l'option special NO_CLDSTOP
+	actionFinVoiturier.sa_flags=0; 
 	sigaction(SIGCHLD, &actionFinVoiturier,0); 
 
 	//fermeture du canal en écriture
@@ -116,44 +113,22 @@ static void Initialisation(int canal[], int sem_ecran,int sem_placeLibre,/* int 
 	
 	int flag_options = 0;
 	zone_nbPlace = (int*) shmat(mp_nbPlace,NULL,flag_options); //attachement au segment de mémoire
-	//zone_placesParking = (int*) shmat(mp_placesParking,NULL,flag_options);
+	zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,flag_options);
+	//*psem_placeLibre =sem_placeLibre;
+	//*psem_ecran=sem_ecran;
 
-	*psem_placeLibre =sem_placeLibre;
-	*psem_ecran=sem_ecran;
-	//*pcanal=canal;
-} //----- fin de Initialisation()
-
-static void Moteur()
-// Mode d'emploi :
-//	- lecture en boucle du canal (de lecture) sortie où GererClavier est écrivain
-//	- récupère les informations de la voiture à faire sortir
-//	- appel de la tâche Voiturier pour sortir la voiture
-//
-// Contrat : aucun
-{
-	for(;;)
+	
+	int numPlace;
+	int readRet;
+	do
 	{
-		Voiture voit;
-		while(read((*pcanal)[TO_READ],&voit,sizeof(Voiture)))
+		while((readRet = read(canal[TO_READ],&numPlace,sizeof(int))) > 0)
 		{
-			while(nbVoiturier<8)
-			{
-				pid_t voiturier = SortirVoiture(voit.numPlace); // appel un voiturier pour sortir la voiture garée à numPlace
-				voituriers.insert(make_pair(voiturier,voit));	// insère dans la structure de données des voituriers en cours
-				nbVoiturier++;
-			}
+			pid_t voiturier = SortirVoiture(numPlace); 	// appel un voiturier pour sortir la voiture garée à numPlace
+			voituriers.insert(make_pair(voiturier,zone_placesParking[numPlace]));	// insère dans la structure de données des voituriers en cours
+			nbVoiturier++;
 		}
 	}
-} //----- fin de Moteur()
-
-//////////////////////////////////////////////////////////////////  PUBLIC
-//---------------------------------------------------- Fonctions publiques
-void BarriereSortie (int canal[],int sem_ecran,int sem_placeLibre,int mp_nbPlace)
-// Algorithme :
-//
-{
-	Initialisation(canal,sem_ecran,sem_placeLibre, mp_nbPlace);
-	Moteur();
-
+	while(readRet == -1);
 } //----- fin de BarriereSortie
 

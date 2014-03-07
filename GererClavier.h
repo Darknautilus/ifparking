@@ -35,7 +35,7 @@ typedef struct
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[]);
+void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBarriere4[]);
 // Mode d'emploi :
 // Contrat :
 

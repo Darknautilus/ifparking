@@ -34,11 +34,7 @@
 //---------------------------------------------------- Variables statiques
 
 //------------------------------------------------------ Fonctions privées
-static void PhaseInit()
-{
 
-
-}
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
@@ -65,7 +61,7 @@ int main ( )
 	
 	//creation des ipc
 	int mp_nbPlace =shmget(IPC_PRIVATE,sizeof(int),IPC_CREAT | DROITS);
-	int mp_placesParking = shmget(IPC_PRIVATE,8*sizeof(int ),IPC_CREAT | DROITS);
+	int mp_placesParking = shmget(IPC_PRIVATE,8*sizeof(Voiture),IPC_CREAT | DROITS); // Pour connaitre quelle voiture occupe quelle place
 	int mp_requetes = shmget (IPC_PRIVATE, 3*sizeof(string), IPC_CREAT | DROITS);
 
 	int sem_placeLibre = semget (IPC_PRIVATE,1, IPC_CREAT | DROITS); //sémaphore pour gérer une nouvelle place disponible laissé après une sortie de voiture
@@ -87,16 +83,16 @@ int main ( )
 
 	//initalisation des mémoires partagées
 	int flag_options = 0;
+	
 	int *zone_nbPlace = (int*) shmat(mp_nbPlace,NULL,flag_options); //attachement au segment de mémoire
 	*zone_nbPlace = 8;
-	int *zone_placesParking = (int*) shmat(mp_placesParking,NULL,flag_options);
-	for(int i =0; i<8;i++)
-	{
-		zone_placesParking[i]=0;		// on utilisera 0 pour dire que la place est vacante et 1 pour dire qu'elle est occupée
-	}
+
+	Voiture *zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,flag_options);
+	
 	string * zone_requetes = (string *) shmat(mp_requetes,NULL,flag_options);
 	// fin initialisation mémoire partagées
 	
+
 	//initalisation des sémaphores
 	semctl(sem_placeLibre,0,SETVAL,NB_PLACES);
 	semctl(sem_ecran,0,SETVAL,1);
@@ -104,12 +100,12 @@ int main ( )
 	//creation des processus fils..
 	if((noGererClavier =fork()) == 0)
 	{
-		GererClavier(barriere1,barriere2,barriere3);
+		GererClavier(barriere1,barriere2,barriere3,barriere4);
 		//exit(0);
 	}
 	else if((noBarriereSortie = fork()) == 0)
 	{
-		//BarriereSortie(barriere4,sem_ecran,sem_placeLibre,mp_nbPlace);	
+		BarriereSortie(barriere4,sem_ecran,sem_placeLibre,mp_nbPlace,mp_placesParking);	
 	}
 	else if((noBarriereEntree1 = fork()) == 0)
 	{
@@ -139,19 +135,18 @@ int main ( )
 	
 		//phase moteur
 		waitpid(noGererClavier,NULL,0);
-		printf("%d est mort alors je pète tout !",noGererClavier);	
 		
 		//phase de destruction
-		kill(noBarriereEntree1,SIGUSR2);
-		waitpid(noBarriereEntree1,NULL,0);
-		kill(noBarriereEntree2,SIGUSR2);
-		waitpid(noBarriereEntree2,NULL,0);
 		kill(noBarriereEntree3,SIGUSR2);
 		waitpid(noBarriereEntree3,NULL,0);
+		kill(noBarriereEntree2,SIGUSR2);
+		waitpid(noBarriereEntree2,NULL,0);
+		kill(noBarriereEntree1,SIGUSR2);
+		waitpid(noBarriereEntree1,NULL,0);
 		kill(noBarriereSortie,SIGUSR2);
 		waitpid(noBarriereSortie,NULL,0);
 		kill(noHeure,SIGUSR2);
-		waitpid(noHeure,0,0);
+		waitpid(noHeure,NULL,0);
 		
 		bool efface = true;
 		TerminerApplication(efface);
