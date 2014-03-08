@@ -80,6 +80,9 @@ static TypeZone DefineEtat(int num)
 }
 
 static void FinT (int noSignal)
+// Mode emploi: destruction de la tâche BarriereSortie
+// 	- envoie un signal de fin SIGUSR2 à tous les processus fils voituriers en cours
+// 	- termine le processus BarriereSortie
 {
 	if(noSignal == SIGUSR2)
 	{
@@ -94,6 +97,14 @@ static void FinT (int noSignal)
 }
 
 static void FinVoiturier(int noSignal)
+// Mode emploi : handler de fin d'une tâche Voiturier
+// 		- récupère l'id du processus mort ainsi que l'objet voiture associé à cet id dans la map voituriers
+// 		- ajoute l'heure de départ à cet voiture 
+// 		- efface de la zone Etat associé les références de la voiture
+// 		- affiche les informations de sortie du véhicule
+// 		- incrémente la sémaphore sem_placeLibre pour indiquer qu'une place s'est libérée
+// 		- TODO efface la bonne requete en prenant compte du type voiture et ordre d'arrivée
+// 		 
 {
 	int numPlace;
 	int status;
@@ -119,7 +130,7 @@ static void FinVoiturier(int noSignal)
 //---------------------------------------------------- Fonctions publiques
 void BarriereSortie (int canal[],int sem_ecran,int sem_placeLibre,int mp_nbPlace, int mp_placesParking)
 // Algorithme :
-//
+//		processus fils BarriereSortie
 {
 	//masque de blocage du signal SIGINT
 	struct sigaction masqueFin;
@@ -143,22 +154,26 @@ void BarriereSortie (int canal[],int sem_ecran,int sem_placeLibre,int mp_nbPlace
 	//fermeture du canal en écriture
 	close(canal[TO_WRITE]);
 	
-	int flag_options = 0;
-	zone_nbPlace = (int*) shmat(mp_nbPlace,NULL,flag_options); //attachement au segment de mémoire
-	zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,flag_options);
+	//attachement aux segments de mémoire
+	zone_nbPlace = (int*) shmat(mp_nbPlace,NULL,0); 
+	zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,SHM_RDONLY); // lecture unique sur la mémoire partagée
+
+
 	psem_placeLibre =&sem_placeLibre;
 	psem_ecran=&sem_ecran;
 
 	
+	// --- PHASE MOTEUR ---
 	int numPlace;
 	int readRet;
 	do
 	{
 		while((readRet = read(canal[TO_READ],&numPlace,sizeof(int))) > 0)
 		{
-			pid_t voiturier = SortirVoiture(numPlace); 	// appel un voiturier pour sortir la voiture garée à numPlace
-			// MEMO: 
+			pid_t voiturier = SortirVoiture(numPlace);	// appel un voiturier pour sortir la voiture garée à numPlace
+			
 			voituriers.insert(make_pair(voiturier,zone_placesParking[numPlace]));	// insère dans la structure de données des voituriers en cours
+		
 		}
 	}
 	while(readRet == -1);

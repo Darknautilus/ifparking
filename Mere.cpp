@@ -42,14 +42,14 @@ int main ( )
 // Algorithme :
 //	- Processus principal lancé au début de l'application.
 {
-	// on masque le signal SIGINT
+	//on masque le signal SIGINT
 	struct sigaction masqueFin;
 	masqueFin.sa_handler = SIG_IGN;
 	sigemptyset(&masqueFin.sa_mask);
 	masqueFin.sa_flags = 0;
 	sigaction(SIGINT,&masqueFin,NULL);	
 
-	//liste tâche filles
+	//liste tâches filles
 	pid_t noGererClavier;
 	pid_t noBarriereSortie;
 	pid_t noBarriereEntree1;
@@ -57,12 +57,10 @@ int main ( )
 	pid_t noBarriereEntree3;
 	pid_t noHeure;
 	
-	key_t clefParking; // voir si c'est necessaire plutot qu'une simple clef privée..
-	
 	//creation des ipc
-	int mp_nbPlace =shmget(IPC_PRIVATE,sizeof(int),IPC_CREAT | DROITS);
+	int mp_nbPlace =shmget(IPC_PRIVATE,sizeof(int),IPC_CREAT | DROITS); //TODO Obsolète (inutilisé)
 	int mp_placesParking = shmget(IPC_PRIVATE,8*sizeof(Voiture),IPC_CREAT | DROITS); // Pour connaitre quelle voiture occupe quelle place
-	int mp_requetes = shmget (IPC_PRIVATE, 3*sizeof(string), IPC_CREAT | DROITS);
+	int mp_requetes = shmget (IPC_PRIVATE, 3*sizeof(Voiture), IPC_CREAT | DROITS); // 
 
 	int sem_placeLibre = semget (IPC_PRIVATE,1, IPC_CREAT | DROITS); //sémaphore pour gérer une nouvelle place disponible laissé après une sortie de voiture
 	int sem_ecran = semget(IPC_PRIVATE,1,IPC_CREAT|DROITS); //sémaphore pour gérer les accès concurent sur la ressource critique écran.
@@ -71,7 +69,7 @@ int main ( )
 	int barriere1[2];
 	int barriere2[2];
 	int barriere3[2];
-	int barriere4[2];
+	int barriere4[2]; //-> barriere de sortie
 	pipe(barriere1);
 	pipe(barriere2);
 	pipe(barriere3);
@@ -82,14 +80,14 @@ int main ( )
 	noHeure = ActiverHeure();
 
 	//initalisation des mémoires partagées
-	int flag_options = 0;
+	int flag_options = 0; // Mere créé et détruit -> a donc tous les droits
 	
 	int *zone_nbPlace = (int*) shmat(mp_nbPlace,NULL,flag_options); //attachement au segment de mémoire
-	*zone_nbPlace = 8;
+	*zone_nbPlace = NB_PLACES;
 
 	Voiture *zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,flag_options);
 	
-	string * zone_requetes = (string *) shmat(mp_requetes,NULL,flag_options);
+	Voiture *zone_requetes = (Voiture *) shmat(mp_requetes,NULL,flag_options);
 	// fin initialisation mémoire partagées
 	
 
