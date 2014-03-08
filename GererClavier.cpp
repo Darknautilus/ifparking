@@ -98,7 +98,6 @@ void Commande(char code, unsigned int valeur)
 			write(desc,&voit,sizeof(Voiture));
 			break;
 		case 'S':
-			printf("Sortie place %d",valeur);
 			desc = barriere4[1];
 			numPlace = valeur;
 			write(desc,&numPlace,sizeof(int));

@@ -19,6 +19,7 @@
 #include <sys/errno.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <sys/sem.h>
 //------------------------------------------------------ Include personnel
 #include "BarriereEntree.h"
 
@@ -33,6 +34,9 @@ static std::map<pid_t,Voiture> voituriers;
 static Voiture voitCourante;
 static int lastNumVoiture = 0;
 static Voiture *zone_placesParking;
+
+static struct sembuf reserver = {0,-1,0};
+static struct sembuf liberer = {0,1,0};
 
 
 //------------------------------------------------------ Fonctions privées
@@ -108,6 +112,8 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 			voiture.arrivee = time(0);  // pour enregistrer l'heure d'arrivée
 			DessinerVoitureBarriere(voiture.barriere,voiture.type);
 			// vérifications
+			semop(sem_placeLibre,&reserver,1); //demande s'il y a de la place sinon faut depose requete
+	
 			pid_t voiturier = GarerVoiture(voiture.barriere);
 			voituriers.insert(make_pair(voiturier,voiture));
 		}
