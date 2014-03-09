@@ -17,7 +17,9 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <sys/errno.h>
-
+#include <sys/shm.h>
+#include <sys/wait.h>
+#include <sys/sem.h>
 //------------------------------------------------------ Include personnel
 #include "BarriereEntree.h"
 
@@ -31,6 +33,11 @@ static bool exited = false;
 static std::map<pid_t,Voiture> voituriers;
 static Voiture voitCourante;
 static int lastNumVoiture = 0;
+static Voiture *zone_placesParking;
+
+static struct sembuf reserver = {0,-1,0};
+static struct sembuf liberer = {0,1,0};
+
 
 //------------------------------------------------------ Fonctions privées
 static void FinVoiturier(int signal)
@@ -43,6 +50,8 @@ static void FinVoiturier(int signal)
 		{
 			int numPlace = WEXITSTATUS(status);
 			Voiture voit = voituriers[voiturier];
+			voit.numPlace = numPlace;
+			zone_placesParking[numPlace] = voit;
 			AfficherPlace(numPlace,voit.type,voit.num,time(NULL));
 			voituriers.erase(voiturier);
 		}
@@ -95,6 +104,8 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 
 	close(canal[1]);
 
+	zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,0);
+	
 	Voiture voiture;
 	int readRet;
 	do
@@ -105,6 +116,8 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 			voiture.arrivee = time(0);  // pour enregistrer l'heure d'arrivée
 			DessinerVoitureBarriere(voiture.barriere,voiture.type);
 			// vérifications
+			semop(sem_placeLibre,&reserver,1); //demande s'il y a de la place sinon faut depose requete
+	
 			pid_t voiturier = GarerVoiture(voiture.barriere);
 			voituriers.insert(make_pair(voiturier,voiture));
 		}

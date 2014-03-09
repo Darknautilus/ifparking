@@ -23,7 +23,7 @@
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void BarriereSortie(int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking);
+void BarriereSortie(int canal[], int sem_ecran, int sem_placeLibre, int mp_nbPlace,int mp_placesParking);
 // Mode d'emploi :
 //	- Processus fils BarriereSortie
 
