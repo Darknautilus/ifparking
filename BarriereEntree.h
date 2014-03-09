@@ -25,7 +25,7 @@
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void BarriereEntree(int canal[], int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking);
+void BarriereEntree(int canal[],int mp_numVoiture, int sem_numVoiture, int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking);
 //Mode d'emploi :
 
 //Contrat :
