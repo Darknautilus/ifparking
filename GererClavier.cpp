@@ -26,7 +26,7 @@
 static int barriere1[2];
 static int barriere2[2];
 static int barriere3[2];
-static int barriere4[2];
+static int barriereSortie[2];
 //------------------------------------------------------ Fonctions privées
 static void FinT(int signal)
 {
@@ -35,7 +35,7 @@ static void FinT(int signal)
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBarriere4[])
+void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBarriereSortie[])
 {
 	struct sigaction masqueFin;
 	masqueFin.sa_handler = FinT;
@@ -51,8 +51,8 @@ void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBar
 		close(barriere2[0]);
 		barriere3[i] = pBarriere3[i];
 		close(barriere3[0]);
-		barriere4[i] = pBarriere4[i];
-		close(barriere4[0]);
+		barriereSortie[i] = pBarriereSortie[i];
+		close(barriereSortie[0]);
 	}
 
 	for(;;)
@@ -98,7 +98,7 @@ void Commande(char code, unsigned int valeur)
 			write(desc,&voit,sizeof(Voiture));
 			break;
 		case 'S':
-			desc = barriere4[1];
+			desc = barriereSortie[1];
 			numPlace = valeur;
 			write(desc,&numPlace,sizeof(int));
 			break;

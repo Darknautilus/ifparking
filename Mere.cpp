@@ -17,6 +17,7 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <sys/wait.h>
+#include <sys/errno.h>
 #include <string>
 //------------------------------------------------------ Include personnel
 #include "Mere.h"
@@ -148,22 +149,46 @@ int main (int argc, const char **argv)
 		//fin phase initialisation
 	
 		//phase moteur
-		waitpid(noGererClavier,NULL,0);
+		pid_t child;
+		do
+		{	
+			child = waitpid(noGererClavier,NULL,0);
+		}
+		while(child == -1 && errno == EINTR);
 		
 		//phase de destruction
 		kill(noBarriereEntree3,SIGUSR2);
-		waitpid(noBarriereEntree3,NULL,0);
+		do
+		{
+			child = waitpid(noBarriereEntree3,NULL,0);
+		}
+		while(child == -1 && errno == EINTR);
 		kill(noBarriereEntree2,SIGUSR2);
-		waitpid(noBarriereEntree2,NULL,0);
+		do
+		{
+			child = waitpid(noBarriereEntree2,NULL,0);
+		}
+		while(child == -1 && errno == EINTR);
 		kill(noBarriereEntree1,SIGUSR2);
-		waitpid(noBarriereEntree1,NULL,0);
+		do
+		{
+			child = waitpid(noBarriereEntree1,NULL,0);
+		}
+		while(child == -1 && errno == EINTR);
 		kill(noBarriereSortie,SIGUSR2);
-		waitpid(noBarriereSortie,NULL,0);
+		do
+		{
+			child = waitpid(noBarriereSortie,NULL,0);
+		}
+		while(child == -1 && errno == EINTR);
 		kill(noHeure,SIGUSR2);
-		waitpid(noHeure,NULL,0);
+		do
+		{
+			child = waitpid(noHeure,NULL,0);
+		}
+		while(child == -1 && errno == EINTR);
 		
-		bool efface = true;
-		TerminerApplication(efface);
+		TerminerApplication(true);
 		
 		//destruction des ipc
 		shmctl(mp_nbPlace,IPC_RMID,0);

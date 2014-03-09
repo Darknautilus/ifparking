@@ -17,6 +17,7 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <sys/wait.h>
+#include <sys/errno.h>
 #include <string>
 #include <map>
 #include <iostream>
@@ -32,6 +33,7 @@
 //------------------------------------------------------------------ Types
 
 //---------------------------------------------------- Variables statiques
+static bool exited = false;
 static int *zone_nbPlace;
 static Voiture *zone_placesParking;
 
@@ -81,12 +83,18 @@ static TypeZone DefineEtat(int num)
 
 static void FinT (int noSignal)
 {
+	exited = true;
+	pid_t voiturier;
 	if(noSignal == SIGUSR2)
 	{
 		for(std::map<pid_t,Voiture>::iterator it = voituriers.begin(); it != voituriers.end(); ++it)
 		{
 			kill(it->first,SIGUSR2);
-			waitpid(it->first,NULL,0);
+			do
+			{
+				voiturier = waitpid(it->first,NULL,0);
+			}
+			while(voiturier == -1 && errno == EINTR);
 		}
 		voituriers.clear();
 		exit(0); // detachement automatique de touts les segments de mémoire attachés par le processus
@@ -95,23 +103,26 @@ static void FinT (int noSignal)
 
 static void FinVoiturier(int noSignal)
 {
-	int numPlace;
-	int status;
-	if(noSignal == SIGCHLD )
+	if(!exited)
 	{
-		pid_t voiturier = wait(&status); // 
-		Voiture voit = voituriers[voiturier];  // pour récupérer les infos concernant la voiture gérée par le voiturier
-		voit.depart = time(0);	// défini l'heure de départ 
+		int numPlace;
+		int status;
+		if(noSignal == SIGCHLD )
+		{
+			pid_t voiturier = wait(&status); // 
+			Voiture voit = voituriers[voiturier];  // pour récupérer les infos concernant la voiture gérée par le voiturier
+			voit.depart = time(0);	// défini l'heure de départ 
 
-		semop((*psem_ecran),&reserver,1); // Réservation de la ressource critique écran
-		Effacer(DefineEtat(voit.numPlace)); 
-		AfficherSortie(voit.type,voit.num,voit.arrivee,voit.depart);  
-		semop((*psem_ecran),&liberer,1); // Liberation de la ressource critique écran
+			semop((*psem_ecran),&reserver,1); // Réservation de la ressource critique écran
+			Effacer(DefineEtat(voit.numPlace)); 
+			AfficherSortie(voit.type,voit.num,voit.arrivee,voit.depart);  
+			semop((*psem_ecran),&liberer,1); // Liberation de la ressource critique écran
 
-		voituriers.erase(voiturier); 
-		zone_nbPlace++;
-		
-		semop((*psem_placeLibre),&liberer,1); //Pour indiquer qu'il y a de nouveau une place libre
+			voituriers.erase(voiturier); 
+			zone_nbPlace++;
+			
+			semop((*psem_placeLibre),&liberer,1); //Pour indiquer qu'il y a de nouveau une place libre
+		}
 	}
 }
 

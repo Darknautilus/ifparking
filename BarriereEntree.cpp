@@ -52,7 +52,7 @@ static void FinVoiturier(int signal)
 			Voiture voit = voituriers[voiturier];
 			voit.numPlace = numPlace;
 			zone_placesParking[numPlace] = voit;
-			AfficherPlace(numPlace,voit.type,voit.num,time(NULL));
+			AfficherPlace(numPlace,voit.type,voit.num,voit.arrivee);
 			voituriers.erase(voiturier);
 		}
 	}
