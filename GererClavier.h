@@ -21,8 +21,17 @@
 #include <Menu.h>
 
 //------------------------------------------------------------- Constantes
+#define REQ_BLAISE_PROF 0
+#define REQ_BLAISE_AUTRE 1
+#define REQ_GASTON 2
 
 //------------------------------------------------------------------ Types
+typedef struct
+{
+	int mem;
+	int sem;
+} ress_critique; // Ressource critique
+
 typedef struct
 {
 	TypeUsager type;
@@ -33,8 +42,17 @@ typedef struct
 	time_t depart;
 } Voiture;
 
+typedef struct
+{
+	TypeUsager type;
+	TypeBarriere barriere;
+	time_t arrivee;
+} Requete;
+
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
+unsigned short int TypeBarriereToReqId(TypeBarriere barriere);
+
 void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBarriere4[]);
 // Mode d'emploi :
 // Contrat :
