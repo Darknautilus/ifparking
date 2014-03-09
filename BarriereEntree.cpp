@@ -52,9 +52,15 @@ static void FinVoiturier(int signal)
 static void FinT(int signal)
 {
 	exited = true;
+	pid_t voiturier;
 	for(std::map<pid_t,Voiture>::iterator it = voituriers.begin(); it != voituriers.end(); ++it)
 	{
 		kill(it->first,SIGUSR2);
+		do
+		{
+			voiturier = waitpid(it->first,NULL,0);
+		}
+		while(voiturier == -1 && errno == EINTR);
 	}
 	voituriers.clear();
 	exit(0);

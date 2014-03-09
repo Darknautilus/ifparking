@@ -25,6 +25,8 @@
 #include "Menu.h"
 ///////////////////////////////////////////////////////////////////  PRIVE
 //------------------------------------------------------------- Constantes
+#define NB_MAX_IPC 5
+#define IPC_KEYS_FILE "ipcKeys"
 #define DROITS 0666 //lecture, écriture pour tout le monde
 #define IPC_PATHNAME
 #define NB_PLACES 8
@@ -42,7 +44,7 @@ static void PhaseInit()
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-int main ( )
+int main (int argc, const char **argv)
 // Algorithme :
 //	- Processus principal lancé au début de l'application.
 {
@@ -51,7 +53,21 @@ int main ( )
 	masqueFin.sa_handler = SIG_IGN;
 	sigemptyset(&masqueFin.sa_mask);
 	masqueFin.sa_flags = 0;
-	sigaction(SIGINT,&masqueFin,NULL);	
+	sigaction(SIGINT,&masqueFin,NULL);
+
+	FILE *ipcFile = fopen(IPC_KEYS_FILE,"w");
+	if(ipcFile == NULL)
+	{
+		exit(EXIT_FAILURE);
+	}
+
+	// génération des clés IPC
+	key_t ipcKeys[NB_MAX_IPC];
+	int i;
+	for(i=0;i<NB_MAX_IPC;i++)
+	{
+		ipcKeys[i] = ftok(IPC_KEYS_FILE,i);
+	}
 
 	//liste tâche filles
 	pid_t noGererClavier;
@@ -61,25 +77,23 @@ int main ( )
 	pid_t noBarriereEntree3;
 	pid_t noHeure;
 	
-	key_t clefParking; // voir si c'est necessaire plutot qu'une simple clef privée..
-	
 	//creation des ipc
-	int mp_nbPlace =shmget(IPC_PRIVATE,sizeof(int),IPC_CREAT | DROITS);
-	int mp_placesParking = shmget(IPC_PRIVATE,8*sizeof(int ),IPC_CREAT | DROITS);
-	int mp_requetes = shmget (IPC_PRIVATE, 3*sizeof(string), IPC_CREAT | DROITS);
+	int mp_nbPlace = shmget(ipcKeys[0],sizeof(int),IPC_CREAT | DROITS);
+	int mp_placesParking = shmget(ipcKeys[1],8*sizeof(int ),IPC_CREAT | DROITS);
+	int mp_requetes = shmget (ipcKeys[2], 3*sizeof(string), IPC_CREAT | DROITS);
 
-	int sem_placeLibre = semget (IPC_PRIVATE,1, IPC_CREAT | DROITS); //sémaphore pour gérer une nouvelle place disponible laissé après une sortie de voiture
-	int sem_ecran = semget(IPC_PRIVATE,1,IPC_CREAT|DROITS); //sémaphore pour gérer les accès concurent sur la ressource critique écran.
+	int sem_placeLibre = semget (ipcKeys[3],1, IPC_CREAT | DROITS); //sémaphore pour gérer une nouvelle place disponible laissé après une sortie de voiture
+	int sem_ecran = semget(ipcKeys[4],1,IPC_CREAT|DROITS); //sémaphore pour gérer les accès concurent sur la ressource critique écran.
 
 	//creation canal de communication des barrieres
 	int barriere1[2];
 	int barriere2[2];
 	int barriere3[2];
-	int barriere4[2];
+	int barriereSortie[2];
 	pipe(barriere1);
 	pipe(barriere2);
 	pipe(barriere3);
-	pipe(barriere4);
+	pipe(barriereSortie);
 
 	//phase Initialisation
 	InitialiserApplication(TYPE_TERMINAL);
@@ -109,7 +123,7 @@ int main ( )
 	}
 	else if((noBarriereSortie = fork()) == 0)
 	{
-		//BarriereSortie(barriere4,sem_ecran,sem_placeLibre,mp_nbPlace);	
+		//BarriereSortie(barriereSortie,sem_ecran,sem_placeLibre,mp_nbPlace);	
 	}
 	else if((noBarriereEntree1 = fork()) == 0)
 	{
@@ -133,7 +147,7 @@ int main ( )
 			close (barriere1[i]);
 			close (barriere2[i]);
 			close (barriere3[i]);
-			close (barriere4[i]);
+			close (barriereSortie[i]);
 		}
 		//fin phase initialisation
 	
@@ -162,6 +176,9 @@ int main ( )
 		shmctl(mp_requetes,IPC_RMID,0);
 		semctl(sem_placeLibre,IPC_RMID,0);
 		semctl(sem_ecran,IPC_RMID,0);
+
+		fclose(ipcFile);
+		unlink(IPC_KEYS_FILE);
 
 		exit(0);
 	}	
