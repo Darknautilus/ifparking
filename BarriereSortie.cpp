@@ -187,6 +187,6 @@ void BarriereSortie (int canal[],int sem_ecran,int sem_placeLibre,int mp_nbPlace
 		
 		}
 	}
-	while(readRet == -1);
+	while(readRet == -1 && errno == EINTR);
 } //----- fin de BarriereSortie
 

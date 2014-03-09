@@ -32,7 +32,11 @@
 static bool exited = false;
 static std::map<pid_t,Voiture> voituriers;
 static Voiture voitCourante;
-static int lastNumVoiture = 0;
+
+static int *lastNumVoiture;
+static int mp_lastNumVoiture;
+static int sem_lastNumVoiture;
+
 static Voiture *zone_placesParking;
 
 static struct sembuf reserver = {0,-1,0};
@@ -77,12 +81,18 @@ static void FinT(int signal)
 
 static int getNumVoiture()
 {
-	return lastNumVoiture = (lastNumVoiture % 999) + 1;
+	int num;
+	semop(sem_lastNumVoiture,&reserver,1);
+	lastNumVoiture = (int*)shmat(mp_lastNumVoiture,NULL,0);
+	num = *lastNumVoiture = ((*lastNumVoiture % 999) + 1);
+	shmdt(lastNumVoiture);
+	semop(sem_lastNumVoiture,&liberer,1);
+	return num;
 }
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking)
+void BarriereEntree(int canal[],int mp_numVoiture, int sem_numVoiture, int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking)
 {
 	struct sigaction masqueFin;
 	masqueFin.sa_handler = SIG_IGN;
@@ -101,6 +111,9 @@ void BarriereEntree(int canal[],int sem_ecran, int sem_placeLibre, int mp_nbPlac
 	sigemptyset(&masqueFinVoit.sa_mask);
 	masqueFinVoit.sa_flags = 0;
 	sigaction(SIGCHLD,&masqueFinVoit,NULL);
+
+	sem_lastNumVoiture = sem_numVoiture;
+	mp_lastNumVoiture = mp_numVoiture;
 
 	close(canal[1]);
 
