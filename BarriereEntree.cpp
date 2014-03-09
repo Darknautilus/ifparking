@@ -52,7 +52,7 @@ static void FinVoiturier(int signal)
 			Voiture voit = voituriers[voiturier];
 			voit.numPlace = numPlace;
 			zone_placesParking[numPlace] = voit;
-			AfficherPlace(numPlace,voit.type,voit.num,time(NULL));
+			AfficherPlace(numPlace,voit.type,voit.num,voit.arrivee);
 			voituriers.erase(voiturier);
 		}
 	}
@@ -61,11 +61,15 @@ static void FinVoiturier(int signal)
 static void FinT(int signal)
 {
 	exited = true;
+	pid_t voiturier;
 	for(std::map<pid_t,Voiture>::iterator it = voituriers.begin(); it != voituriers.end(); ++it)
 	{
 		kill(it->first,SIGUSR2);
-		waitpid(it->first,NULL,0);
-		
+		do
+		{
+			voiturier = waitpid(it->first,NULL,0);
+		}
+		while(voiturier == -1 && errno == EINTR);
 	}
 	voituriers.clear();
 	exit(0);
