@@ -127,7 +127,7 @@ int main (int argc, const char **argv)
 	
 	// Initialisation de l'affichage
 	InitialiserApplication(TYPE_TERMINAL);
-	noHeure = ActiverHeure();
+	pid_t noHeure = ActiverHeure();
 	
 	// Liste tâches filles
 	pid_t noGererClavier;
@@ -135,7 +135,6 @@ int main (int argc, const char **argv)
 	pid_t noBarriereEntree1;
 	pid_t noBarriereEntree2;
 	pid_t noBarriereEntree3;
-	pid_t noHeure;
 	
 	// Creation des processus fils
 	if((noGererClavier = fork()) == 0)
