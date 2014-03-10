@@ -31,13 +31,13 @@
 //---------------------------------------------------- Variables statiques
 static bool exited = false;
 static std::map<pid_t,Voiture> voituriers;
-static Voiture voitCourante;
 
-static int *lastNumVoiture;
-static int mp_lastNumVoiture;
-static int sem_lastNumVoiture;
+static int sem_ecran;
 
-static Voiture *zone_placesParking;
+static ress_critique lastNumVoiture;
+static ress_critique requetes;
+
+static Voiture *placesParking;
 
 static struct sembuf reserver = {0,-1,0};
 static struct sembuf liberer = {0,1,0};
@@ -55,8 +55,13 @@ static void FinVoiturier(int signal)
 			int numPlace = WEXITSTATUS(status);
 			Voiture voit = voituriers[voiturier];
 			voit.numPlace = numPlace;
-			zone_placesParking[numPlace] = voit;
+
+			placesParking[numPlace] = voit;
+
+			semop(sem_ecran,&reserver,1);
 			AfficherPlace(numPlace,voit.type,voit.num,voit.arrivee);
+			semop(sem_ecran,&liberer,1);
+
 			voituriers.erase(voiturier);
 		}
 	}
@@ -76,23 +81,57 @@ static void FinT(int signal)
 		while(voiturier == -1 && errno == EINTR);
 	}
 	voituriers.clear();
+	shmdt(placesParking);
 	exit(0);
+}
+
+// op : true, setter
+// 			false, getter
+static Requete *reqctl(unsigned short int indice, Requete *req, bool op)
+{
+	if(indice < 0 || indice > REQ_GASTON)
+	{
+		return NULL;
+	}
+	else
+	{
+		struct sembuf reserver = {indice,-1,0};
+		struct sembuf liberer = {indice,1,0};
+		semop(requetes.sem,&reserver,1);
+		// MAJ de la mémoire partagée
+		Requete *tabReq = (Requete*)shmat(requetes.mem,NULL,0);
+		if(op)
+		{
+			tabReq[indice].type = req->type;
+			tabReq[indice].barriere = req->barriere;
+			tabReq[indice].arrivee = req->arrivee;
+		}
+		else
+		{
+			req->type = tabReq[indice].type;
+			req->barriere = tabReq[indice].barriere;
+			req->arrivee = tabReq[indice].arrivee;
+		}
+		shmdt(tabReq);
+		semop(requetes.sem,&liberer,1);
+		return req;
+	}
 }
 
 static int getNumVoiture()
 {
 	int num;
-	semop(sem_lastNumVoiture,&reserver,1);
-	lastNumVoiture = (int*)shmat(mp_lastNumVoiture,NULL,0);
-	num = *lastNumVoiture = ((*lastNumVoiture % 999) + 1);
-	shmdt(lastNumVoiture);
-	semop(sem_lastNumVoiture,&liberer,1);
+	semop(lastNumVoiture.sem,&reserver,1);
+	int *numVoiture = (int*)shmat(lastNumVoiture.mem,NULL,0);
+	num = *numVoiture = ((*numVoiture % 999) + 1);
+	shmdt(numVoiture);
+	semop(lastNumVoiture.sem,&liberer,1);
 	return num;
 }
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-void BarriereEntree(int canal[],int mp_numVoiture, int sem_numVoiture, int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking)
+void BarriereEntree(int canal[], ress_critique numVoiture, ress_critique pRequetes, int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking)
 {
 	struct sigaction masqueFin;
 	masqueFin.sa_handler = SIG_IGN;
@@ -112,12 +151,12 @@ void BarriereEntree(int canal[],int mp_numVoiture, int sem_numVoiture, int sem_e
 	masqueFinVoit.sa_flags = 0;
 	sigaction(SIGCHLD,&masqueFinVoit,NULL);
 
-	sem_lastNumVoiture = sem_numVoiture;
-	mp_lastNumVoiture = mp_numVoiture;
+	lastNumVoiture = numVoiture;
+	requetes = pRequetes;
+
+	placesParking = (Voiture*) shmat(mp_placesParking,NULL,0);
 
 	close(canal[1]);
-
-	zone_placesParking = (Voiture*) shmat(mp_placesParking,NULL,0);
 	
 	Voiture voiture;
 	int readRet;
@@ -126,13 +165,41 @@ void BarriereEntree(int canal[],int mp_numVoiture, int sem_numVoiture, int sem_e
 		while((readRet = read(canal[0],&voiture,sizeof(Voiture))) > 0)
 		{
 			voiture.num = getNumVoiture();
-			voiture.arrivee = time(0);  // pour enregistrer l'heure d'arrivée
+			voiture.arrivee = time(NULL);  // pour enregistrer l'heure d'arrivée
+
+			unsigned short int indReq = TypeBarriereToReqId(voiture.barriere);
+
+			int nbPlaces = semctl(sem_placeLibre,0,GETVAL,0);
+			if(!nbPlaces)
+			{
+				// Mise en place de la requête
+				Requete req = {voiture.type,voiture.barriere,voiture.arrivee};
+				reqctl(indReq,&req,true);
+
+				// Affichage de la requête à l'écran
+				semop(sem_ecran,&reserver,1);
+				AfficherRequete(voiture.barriere,voiture.type,voiture.arrivee);
+				semop(sem_ecran,&liberer,1);
+			}
+			
 			DessinerVoitureBarriere(voiture.barriere,voiture.type);
-			// vérifications
-			semop(sem_placeLibre,&reserver,1); //demande s'il y a de la place sinon faut depose requete
-	
+			semop(sem_placeLibre,&reserver,1); // attente d'une place
+
+			if(!nbPlaces)
+			{
+				// Suppression de la requête
+				Requete emptyReq = {AUCUN,AUCUNE,0};
+				reqctl(indReq,&emptyReq,true);
+
+				semop(sem_ecran,&reserver,1);
+				Effacer((TypeZone)(((int)REQUETE_R1)+indReq));
+				semop(sem_ecran,&liberer,1);
+				// Fin suppression requête
+			}
+
 			pid_t voiturier = GarerVoiture(voiture.barriere);
 			voituriers.insert(make_pair(voiturier,voiture));
+			sleep(1);
 		}
 	}
 	while(readRet == -1 && errno == EINTR);

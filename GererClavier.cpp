@@ -35,6 +35,25 @@ static void FinT(int signal)
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
+unsigned short int TypeBarriereToReqId(TypeBarriere barriere)
+{
+	switch(barriere)
+	{
+		case PROF_BLAISE_PASCAL:
+			return REQ_BLAISE_PROF;
+			break;
+		case AUTRE_BLAISE_PASCAL:
+			return REQ_BLAISE_AUTRE;
+			break;
+		case ENTREE_GASTON_BERGER:
+			return REQ_GASTON;
+			break;
+		default:
+			return -1;
+			break;
+	}
+}
+
 void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBarriereSortie[])
 {
 	struct sigaction masqueFin;
