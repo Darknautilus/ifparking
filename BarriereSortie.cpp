@@ -111,7 +111,6 @@ static void FinVoiturier(int noSignal)
 // 		- efface de la zone Etat associé les références de la voiture
 // 		- affiche les informations de sortie du véhicule
 // 		- incrémente la sémaphore sem_placeLibre pour indiquer qu'une place s'est libérée
-// 		- TODO efface la bonne requete en prenant compte du type voiture et ordre d'arrivée
 // 		 
 {
 	if(!exited)

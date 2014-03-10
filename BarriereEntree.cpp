@@ -12,6 +12,7 @@
 #include <map>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <Outils.h>
 #include <sys/wait.h>
@@ -42,7 +43,7 @@ static Voiture *placesParking;
 static struct sembuf reserver = {0,-1,0};
 static struct sembuf liberer = {0,1,0};
 
-
+static bool voitAlreadyHere = false;
 //------------------------------------------------------ Fonctions privées
 static void FinVoiturier(int signal)
 {
@@ -61,7 +62,7 @@ static void FinVoiturier(int signal)
 			semop(sem_ecran,&reserver,1);
 			AfficherPlace(numPlace,voit.type,voit.num,voit.arrivee);
 			semop(sem_ecran,&liberer,1);
-
+			voitAlreadyHere = false;
 			voituriers.erase(voiturier);
 		}
 	}
@@ -162,45 +163,47 @@ void BarriereEntree(int canal[], ress_critique numVoiture, ress_critique pRequet
 	int readRet;
 	do
 	{
-		while((readRet = read(canal[0],&voiture,sizeof(Voiture))) > 0)
-		{
-			voiture.num = getNumVoiture();
-			voiture.arrivee = time(NULL);  // pour enregistrer l'heure d'arrivée
-
-			unsigned short int indReq = TypeBarriereToReqId(voiture.barriere);
-
-			int nbPlaces = semctl(sem_placeLibre,0,GETVAL,0);
-			if(!nbPlaces)
+		
+			while((readRet = read(canal[0],&voiture,sizeof(Voiture))) > 0)
 			{
-				// Mise en place de la requête
-				Requete req = {voiture.type,voiture.barriere,voiture.arrivee};
-				reqctl(indReq,&req,true);
+				voiture.num = getNumVoiture();
+				voiture.arrivee = time(NULL);  // pour enregistrer l'heure d'arrivée
 
-				// Affichage de la requête à l'écran
-				semop(sem_ecran,&reserver,1);
-				AfficherRequete(voiture.barriere,voiture.type,voiture.arrivee);
-				semop(sem_ecran,&liberer,1);
+				unsigned short int indReq = TypeBarriereToReqId(voiture.barriere);
+
+				int nbPlaces = semctl(sem_placeLibre,0,GETVAL,0);
+				if(!nbPlaces)
+				{
+					// Mise en place de la requête
+					Requete req = {voiture.type,voiture.barriere,voiture.arrivee};
+					reqctl(indReq,&req,true);
+	
+					// Affichage de la requête à l'écran
+					semop(sem_ecran,&reserver,1);
+					AfficherRequete(voiture.barriere,voiture.type,voiture.arrivee);
+					semop(sem_ecran,&liberer,1);
+				}
+				DessinerVoitureBarriere(voiture.barriere,voiture.type);
+				semop(sem_placeLibre,&reserver,1); // attente d'une place
+				
+				if(!nbPlaces)
+				{
+					// Suppression de la requête
+					Requete emptyReq = {AUCUN,AUCUNE,0};
+					reqctl(indReq,&emptyReq,true);
+	
+					semop(sem_ecran,&reserver,1);
+					Effacer((TypeZone)(((int)REQUETE_R1)+indReq));
+					semop(sem_ecran,&liberer,1);
+					// Fin suppression requête
+				}
+	
+				pid_t voiturier;
+				voiturier = GarerVoiture(voiture.barriere);
+		
+				voituriers.insert(make_pair(voiturier,voiture));
+				sleep(1);
 			}
-			
-			DessinerVoitureBarriere(voiture.barriere,voiture.type);
-			semop(sem_placeLibre,&reserver,1); // attente d'une place
-
-			if(!nbPlaces)
-			{
-				// Suppression de la requête
-				Requete emptyReq = {AUCUN,AUCUNE,0};
-				reqctl(indReq,&emptyReq,true);
-
-				semop(sem_ecran,&reserver,1);
-				Effacer((TypeZone)(((int)REQUETE_R1)+indReq));
-				semop(sem_ecran,&liberer,1);
-				// Fin suppression requête
-			}
-
-			pid_t voiturier = GarerVoiture(voiture.barriere);
-			voituriers.insert(make_pair(voiturier,voiture));
-			sleep(1);
-		}
 	}
 	while(readRet == -1 && errno == EINTR);
 
