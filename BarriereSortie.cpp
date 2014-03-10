@@ -4,6 +4,9 @@
 // Binome : B3229
 // ======================
 
+// Par Thomas Losbar
+// thomas.losbar@insa-lyon.fr
+
 //---------- Réalisation de la tâche <BarriereSortie> (fichier BarriereSortie.cpp) ---
 
 /////////////////////////////////////////////////////////////////  INCLUDE

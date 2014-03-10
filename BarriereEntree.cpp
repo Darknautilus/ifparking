@@ -1,8 +1,7 @@
 /*************************************************************************
-                           BarriereEntree  -  description
+                           BarriereEntree
                              -------------------
-    début                : BarriereEntree
-    e-mail               : BarriereEntree
+    e-mail               : aurelien.bertron@insa-lyon.fr
 *************************************************************************/
 
 //---------- Réalisation de la tâche <BarriereEntree> (fichier BarriereEntree.cpp) ---
@@ -47,6 +46,7 @@ static bool voitAlreadyHere = false;
 //------------------------------------------------------ Fonctions privées
 static void FinVoiturier(int signal)
 {
+	// Phase destruction du voiturier
 	if(!exited)
 	{
 		int status;
@@ -70,8 +70,10 @@ static void FinVoiturier(int signal)
 
 static void FinT(int signal)
 {
+	// Phase destruction de BarriereEntree
 	exited = true;
 	pid_t voiturier;
+	// Destruction des voituriers
 	for(std::map<pid_t,Voiture>::iterator it = voituriers.begin(); it != voituriers.end(); ++it)
 	{
 		kill(it->first,SIGUSR2);
@@ -86,8 +88,13 @@ static void FinT(int signal)
 	exit(0);
 }
 
-// op : true, setter
-// 			false, getter
+/* Permet de controler les requetes
+	Paramètres :
+		- indice : l'indice du sémaphore élémentaire correspondant à la requête
+		- op : si op vrai, la requête est définie selon req.
+				si op faux, req est définit selon la requête
+	Contrat : la ressource critique correspondant aux requêtes doit être intialisée
+*/
 static Requete *reqctl(unsigned short int indice, Requete *req, bool op)
 {
 	if(indice < 0 || indice > REQ_GASTON)
@@ -119,6 +126,7 @@ static Requete *reqctl(unsigned short int indice, Requete *req, bool op)
 	}
 }
 
+// Permet d'obtenir un numéro d'immatriculation
 static int getNumVoiture()
 {
 	int num;
@@ -134,6 +142,8 @@ static int getNumVoiture()
 //---------------------------------------------------- Fonctions publiques
 void BarriereEntree(int canal[], ress_critique numVoiture, ress_critique pRequetes, int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking)
 {
+	// Phase d'initialisation
+	
 	struct sigaction masqueFin;
 	masqueFin.sa_handler = SIG_IGN;
 	sigemptyset(&masqueFin.sa_mask);
@@ -158,6 +168,8 @@ void BarriereEntree(int canal[], ress_critique numVoiture, ress_critique pRequet
 	placesParking = (Voiture*) shmat(mp_placesParking,NULL,0);
 
 	close(canal[1]);
+	
+	// Phase moteur
 	
 	Voiture voiture;
 	int readRet;

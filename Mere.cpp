@@ -4,6 +4,9 @@
 // Binome : B3229
 // ======================
 
+// Par Thomas Losbar
+// thomas.losbar@insa-lyon.fr
+
 //---------- Réalisation de la tâche <Mere> (fichier Mere.cpp) ---
 
 /////////////////////////////////////////////////////////////////  INCLUDE
@@ -44,48 +47,43 @@ int main (int argc, const char **argv)
 // Algorithme :
 //	- Processus principal lancé au début de l'application.
 {
-	//on masque le signal SIGINT
+	// Masquage de SIGINT
 	struct sigaction masqueFin;
 	masqueFin.sa_handler = SIG_IGN;
 	sigemptyset(&masqueFin.sa_mask);
 	masqueFin.sa_flags = 0;
 	sigaction(SIGINT,&masqueFin,NULL);
+	// Fin Masquage SIGINT
 
+	// Génération des clés IPC
 	FILE *ipcFile = fopen(IPC_KEYS_FILE,"w");
 	if(ipcFile == NULL)
 	{
 		exit(EXIT_FAILURE);
 	}
-
-	// génération des clés IPC
 	key_t ipcKeys[NB_MAX_IPC];
 	int i;
 	for(i=0;i<NB_MAX_IPC;i++)
 	{
 		ipcKeys[i] = ftok(IPC_KEYS_FILE,i);
 	}
+	// Fin génération clés
 
-	//liste tâches filles
-	pid_t noGererClavier;
-	pid_t noBarriereSortie;
-	pid_t noBarriereEntree1;
-	pid_t noBarriereEntree2;
-	pid_t noBarriereEntree3;
-	pid_t noHeure;
 	
-	//creation des ipc
-	int mp_nbPlace =shmget(ipcKeys[0],sizeof(int),IPC_CREAT | DROITS);
+	
+	// Creation des IPC
+	int mp_nbPlace = shmget(ipcKeys[0],sizeof(int),IPC_CREAT | DROITS);
 	int mp_placesParking = shmget(ipcKeys[1],8*sizeof(Voiture),IPC_CREAT | DROITS); // Pour connaitre quelle voiture occupe quelle place
 
-	int sem_placeLibre = semget (ipcKeys[2],1, IPC_CREAT | DROITS); //sémaphore pour gérer une nouvelle place disponible laissé après une sortie de voiture
-	int sem_ecran = semget(ipcKeys[3],1,IPC_CREAT|DROITS); //sémaphore pour gérer les accès concurent sur la ressource critique écran.
+	int sem_placeLibre = semget (ipcKeys[2],1, IPC_CREAT | DROITS); // sémaphore pour gérer une nouvelle place disponible laissé après une sortie de voiture
+	int sem_ecran = semget(ipcKeys[3],1,IPC_CREAT|DROITS); // sémaphore pour gérer les accès concurent sur la ressource critique écran.
 
-	ress_critique requetes;
+	ress_critique requetes; // Gère les requêtes déposées par les voitures
 	requetes.mem = shmget (ipcKeys[4], 3*sizeof(Requete), IPC_CREAT | DROITS);
 	requetes.sem = semget(ipcKeys[5],3,IPC_CREAT|DROITS);
 
-	ress_critique numVoiture;
-	numVoiture.mem = shmget(ipcKeys[6],sizeof(int),IPC_CREAT | DROITS); // le numéro d'immatriculation des voitures
+	ress_critique numVoiture; // Gère l'attribution des numéros d'immatriculation
+	numVoiture.mem = shmget(ipcKeys[6],sizeof(int),IPC_CREAT | DROITS);
 	numVoiture.sem = semget(ipcKeys[7],1,IPC_CREAT | DROITS);
 
 	//creation canal de communication des barrieres
@@ -97,19 +95,14 @@ int main (int argc, const char **argv)
 	pipe(barriere2);
 	pipe(barriere3);
 	pipe(barriereSortie);
+	// Fin création IPC
 
-	//phase Initialisation
-	InitialiserApplication(TYPE_TERMINAL);
-	noHeure = ActiverHeure();
-
-	//initalisation des mémoires partagées
-	int flag_options = 0; 
-	
-	int *zone_nbPlace = (int*) shmat(mp_nbPlace,NULL,flag_options); //attachement au segment de mémoire
+	// Initalisation des mémoires partagées
+	int *zone_nbPlace = (int*) shmat(mp_nbPlace,NULL,0);
 	*zone_nbPlace = NB_PLACES;
 	shmdt(zone_nbPlace);
 
-	Requete *requeteInit = (Requete*)shmat(requetes.mem,NULL,flag_options);
+	Requete *requeteInit = (Requete*)shmat(requetes.mem,NULL,0);
 	for(i=0;i<3;i++)
 	{
 		requeteInit[i].type = AUCUN;
@@ -118,21 +111,34 @@ int main (int argc, const char **argv)
 	}
 	shmdt(requeteInit);
 	
-	int *numVoitureInit = (int*)shmat(numVoiture.mem,NULL,flag_options);
+	int *numVoitureInit = (int*)shmat(numVoiture.mem,NULL,0);
 	*numVoitureInit = 0;
 	shmdt(numVoitureInit);
-	// fin initialisation mémoire partagées
+	// Fin initialisation mémoire partagées
 	
 
-	//initalisation des sémaphores
+	// Initalisation des sémaphores
 	semctl(sem_placeLibre,0,SETVAL,NB_PLACES);
 	semctl(sem_ecran,0,SETVAL,1);
 	semctl(numVoiture.sem,0,SETVAL,1);
 	unsigned short int semReqInitVals[3] = {1,1,1};
 	semctl(requetes.sem,3,SETALL,semReqInitVals);
+	// Fin initialisation des sémaphores
 	
-	//creation des processus fils..
-	if((noGererClavier =fork()) == 0)
+	// Initialisation de l'affichage
+	InitialiserApplication(TYPE_TERMINAL);
+	noHeure = ActiverHeure();
+	
+	// Liste tâches filles
+	pid_t noGererClavier;
+	pid_t noBarriereSortie;
+	pid_t noBarriereEntree1;
+	pid_t noBarriereEntree2;
+	pid_t noBarriereEntree3;
+	pid_t noHeure;
+	
+	// Creation des processus fils
+	if((noGererClavier = fork()) == 0)
 	{
 		GererClavier(barriere1,barriere2,barriere3,barriereSortie);
 	}
@@ -154,6 +160,7 @@ int main (int argc, const char **argv)
 	}
 	else
 	{
+		// On n'utilise pas les canaux ici
 		for(int i =0;i<2;i++)
 		{
 			close (barriere1[i]);
@@ -161,17 +168,18 @@ int main (int argc, const char **argv)
 			close (barriere3[i]);
 			close (barriereSortie[i]);
 		}
-		//fin phase initialisation
+		// Fin phase initialisation
 	
-		//phase moteur
+		// Phase moteur
 		pid_t child;
 		do
 		{	
 			child = waitpid(noGererClavier,NULL,0);
 		}
 		while(child == -1 && errno == EINTR);
+		// Fin phase moteur
 		
-		//phase de destruction
+		// Phase de destruction
 		kill(noBarriereEntree3,SIGUSR2);
 		do
 		{
@@ -207,10 +215,10 @@ int main (int argc, const char **argv)
 		}
 		while(child == -1 && errno == EINTR);
 		
-		//fermeture application
+		// Fermeture application
 		TerminerApplication(true);
 		
-		//destruction des ipc
+		// Destruction des ipc
 		shmctl(mp_nbPlace,IPC_RMID,0);
 		shmctl(mp_placesParking,IPC_RMID,0);
 
