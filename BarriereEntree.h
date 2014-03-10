@@ -1,8 +1,7 @@
 /*************************************************************************
-                           BarriereEntree  -  description
+                           BarriereEntree
                              -------------------
-    début                : BarriereEntree
-    e-mail               : BarriereEntree
+    e-mail               : aurelien.bertron@insa-lyon.fr
 *************************************************************************/
 
 //---------- Interface de la tâche <BarriereEntree> (fichier BarriereEntree.h) -------
@@ -11,7 +10,7 @@
 
 //------------------------------------------------------------------------
 // Rôle de la tâche <BarriereEntree>
-//
+//		Gère les actions à effectuer par chaque barrière
 //
 //------------------------------------------------------------------------
 
@@ -25,10 +24,11 @@
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
+/*
+	Lance la gestion de la barrière
+	Contrat : toutes les ressources critiques et de communication doivent être intialisées.
+*/
 void BarriereEntree(int canal[], ress_critique numVoiture, ress_critique requetes, int sem_ecran, int sem_placeLibre, int mp_nbPlace, int mp_placesParking);
-//Mode d'emploi :
-
-//Contrat :
 
 
 #endif // BarriereEntree_H

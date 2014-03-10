@@ -4,6 +4,9 @@
 // Binome : B3229
 // ======================
 
+// Par Thomas Losbar
+// thomas.losbar@insa-lyon.fr
+
 //---------- Interface de la tâche <Mere> (fichier Mere.h) -------
 #if ! defined ( MERE_H )
 #define MERE_H
@@ -28,11 +31,6 @@
 
 //////////////////////////////////////////////////////////////////  PUBLIC
 //---------------------------------------------------- Fonctions publiques
-// type Nom (liste de paramètres );
-// Mode d'emploi :
-//
-// Contrat :
-//
 
 #endif // MERE_H
 

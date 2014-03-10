@@ -1,8 +1,7 @@
 /*************************************************************************
-                           GererClavier  -  description
+                           GererClavier
                              -------------------
-    début                : GererClavier
-    e-mail               : GererClavier
+    e-mail               : aurelien.bertron@insa-lyon.fr
 *************************************************************************/
 
 //---------- Réalisation de la tâche <GererClavier> (fichier GererClavier.cpp) ---
@@ -13,6 +12,9 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include <Outils.h>
+#include <Menu.h>
 
 //------------------------------------------------------ Include personnel
 #include "GererClavier.h"
@@ -30,6 +32,7 @@ static int barriereSortie[2];
 //------------------------------------------------------ Fonctions privées
 static void FinT(int signal)
 {
+	// Phase destruction
 	exit(0);
 }
 
@@ -56,6 +59,7 @@ unsigned short int TypeBarriereToReqId(TypeBarriere barriere)
 
 void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBarriereSortie[])
 {
+	// Phase initialisation
 	struct sigaction masqueFin;
 	masqueFin.sa_handler = FinT;
 	sigemptyset(&masqueFin.sa_mask);
@@ -74,6 +78,7 @@ void GererClavier(int pBarriere1[], int pBarriere2[], int pBarriere3[], int pBar
 		close(barriereSortie[0]);
 	}
 
+	// Phase moteur
 	for(;;)
 		Menu();
 } //----- fin de GererClavier
